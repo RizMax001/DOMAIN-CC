@@ -5,6 +5,10 @@ async function fetchMedia() {
     return;
   }
 
+  // Menampilkan indikator loading
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+
   // Menentukan endpoint berdasarkan platform
   let apiUrl = '';
   let allowMusicDownload = false; // Variabel untuk mengecek apakah musik bisa diunduh
@@ -27,13 +31,18 @@ async function fetchMedia() {
     return;
   }
 
+  // Pengaturan timeout untuk fetch request (misal 10 detik)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);  // Timeout setelah 10 detik
+
   try {
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, { signal: controller.signal });
     const data = await response.json();
+    clearTimeout(timeoutId); // Bersihkan timeout jika berhasil
 
     if (data.status) {
       let videoLink, musicLink;
-      
+
       // Cek apakah hasilnya berasal dari TikTok atau platform lain
       if (url.includes('tiktok.com') && data.result) {
         // TikTok - Dapatkan video dan musik
@@ -48,6 +57,7 @@ async function fetchMedia() {
 
       const resultDiv = document.getElementById('result');
       resultDiv.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
 
       const videoElement = document.getElementById('video-preview');
       const videoSource = document.getElementById('video-source');
@@ -65,11 +75,14 @@ async function fetchMedia() {
       window.videoDownloadLink = videoLink;
       window.musicDownloadLink = musicLink;
     } else {
+      document.getElementById('loading').style.display = 'none';
       alert("Error: Tidak dapat mengambil media. Periksa URL dan coba lagi.");
     }
   } catch (error) {
+    clearTimeout(timeoutId);
+    document.getElementById('loading').style.display = 'none';
     console.error('Error:', error);
-    alert("Terjadi kesalahan. Silakan coba lagi.");
+    alert("Terjadi kesalahan. Mungkin waktu tunggu terlalu lama atau API tidak responsif. Silakan coba lagi.");
   }
 }
 
